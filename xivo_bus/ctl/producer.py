@@ -15,9 +15,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from xivo_bus.ctl.rpc.amqp_transport_client import AMQPTransportClient
+import logging
+import sys
+
+from kombu import BrokerConnection, Exchange, Producer
+
 from xivo_bus.ctl.config import default_config
 from xivo_bus.ctl.marshaler import Marshaler
+
+logger = logging.getLogger(__name__)
 
 
 class BusProducerError(Exception):
@@ -28,42 +34,58 @@ class BusProducerError(Exception):
 
 
 class BusProducer(object):
-    """
-    The methods on this class are thread safe except for the following:
-
-    * close
-    * connect
-
-    """
 
     def __init__(self, config=default_config):
         self._config = config
-        self._transport = None
         self._marshaler = Marshaler()
+        self._connection = None
+        self._channel = None
+        self._exchange = None
+        self._producer = None
 
-    def close(self):
-        if not self.connected:
-            return
-
-        self._transport.close()
-        self._transport = None
-
-    def connect(self):
+    def connect(self, exchange_name, exchange_type, exchange_durable):
+        logger.info('Connecting to broker %s', self._config.amqp_url)
         if self.connected:
             raise Exception('already connected')
+        self._connection = BrokerConnection(self._config.amqp_url)
+        try:
+            self._connection.connect()
+        except Exception as e:
+            logger.error('Failed to connect to AMQP transport %s: %s', self._config.amqp_url, e)
+            sys.exit(1)
 
-        self._transport = self._new_transport()
+        self._channel = self._connection.channel()
+        self._exchange = Exchange(name=exchange_name,
+                                  type=exchange_type,
+                                  channel=self._channel,
+                                  durable=exchange_durable)
+        self._producer = Producer(exchange=exchange_name,
+                                  channel=self._channel)
+
+        logger.info('Connected to broker %s', self._config.amqp_url)
 
     @property
     def connected(self):
-        return self._transport is not None
+        return self._connection is not None
 
-    def _new_transport(self):
-        return AMQPTransportClient.create_and_connect(config=self._config)
+    def close(self):
+        logger.info('Disconnecting to broker %s', self._config.amqp_url)
+        if not self.connected:
+            return
 
-    def declare_exchange(self, name, exchange_type, durable):
-        self._transport.exchange_declare(name, exchange_type, durable)
+        self._connection.release()
+        self._connection.close()
+        self._connection = None
+        self._channel = None
+        self._exchange = None
+        self._producer = None
 
-    def publish_event(self, exchange, routing_key, event):
+    def publish_event(self, routing_key, event, serializer=None):
+        if not self.connected:
+            raise Exception('connect before to send..')
         body = self._marshaler.marshal_command(event)
-        self._transport.send(exchange, routing_key, body)
+        self._producer.publish(body,
+                               declare=[self._exchange],
+                               exchange=self._exchange,
+                               routing_key=routing_key,
+                               serializer=serializer)

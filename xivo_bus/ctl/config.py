@@ -33,7 +33,7 @@ class BusConfig(object):
                  username=DEFAULT_USERNAME,
                  password=DEFAULT_PASSWORD):
         self.host = host
-        self.port = port
+        self.port = int(port)
         self.virtual_host = virtual_host
         self.username = username
         self.password = password
@@ -47,5 +47,14 @@ class BusConfig(object):
     @property
     def pika_credentials(self):
         return pika.PlainCredentials(self.username, self.password)
+
+    @property
+    def amqp_url(self):
+        return 'amqp://%(username)s:%(password)s@%(host)s:%(port)s/%(virtual_host)s' % self
+
+    def __getitem__(self, name):
+        if name in self.__dict__:
+            return self.__dict__[name]
+
 
 default_config = BusConfig()
