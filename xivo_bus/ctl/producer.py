@@ -59,10 +59,14 @@ class BusProducer(object):
                                   type=exchange_type,
                                   channel=self._channel,
                                   durable=exchange_durable)
-        self._producer = Producer(exchange=exchange_name,
-                                  channel=self._channel)
+        self._producer = Producer(self._connection)
+        self._publish = self._connection.ensure(self._producer, self._producer.publish, errback=self._errback, max_retries=3)
 
         logger.info('Connected to broker %s', self._config.amqp_url)
+
+    def _errback(self, exc, interval):
+        logger.error('Error: %r', exc, exc_info=1)
+        logger.info('Retry in %s seconds.', interval)
 
     @property
     def connected(self):
@@ -73,7 +77,6 @@ class BusProducer(object):
         if not self.connected:
             return
 
-        self._connection.release()
         self._connection.close()
         self._connection = None
         self._channel = None
@@ -83,9 +86,8 @@ class BusProducer(object):
     def publish_event(self, routing_key, event, serializer=None):
         if not self.connected:
             raise Exception('connect before to send..')
-        body = self._marshaler.marshal_command(event)
-        self._producer.publish(body,
-                               declare=[self._exchange],
-                               exchange=self._exchange,
-                               routing_key=routing_key,
-                               serializer=serializer)
+        self._publish(self._marshaler.marshal_command(event),
+                      declare=[self._exchange],
+                      exchange=self._exchange,
+                      routing_key=routing_key,
+                      serializer=serializer)
