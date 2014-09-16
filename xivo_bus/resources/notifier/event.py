@@ -29,18 +29,20 @@ class NotifierEvent(object):
         self.publisher_id = socket.gethostname()
         self.priority = 'INFO',
         self.name = name
-        self.data = kwargs
         self.datetime = str(datetime.datetime.now())
+        self._extra_data = kwargs
+        self.__dict__.update(kwargs)
 
     def marshal(self):
-        return {
+        msg = {
             'message_id': self.message_id,
             'publisher_id': self.publisher_id,
             'priority': self.priority,
             'name': self.name,
-            'data': self.data,
             'datetime': self.datetime
         }
+        msg.update(self._extra_data)
+        return msg
 
     @classmethod
     def unmarshal(cls, msg):

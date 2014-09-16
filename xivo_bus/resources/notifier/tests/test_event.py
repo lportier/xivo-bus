@@ -38,8 +38,7 @@ class TestNotificationEvent(unittest.TestCase):
             'publisher_id': PUBLISHER_ID,
             'message_id': UUID,
             'name': sentinel.name,
-            'datetime': DATETIME,
-            'data': {}
+            'datetime': DATETIME
         }
 
     @patch('xivo_bus.resources.notifier.event.datetime')
@@ -50,7 +49,7 @@ class TestNotificationEvent(unittest.TestCase):
         command = NotifierEvent(sentinel.name,
                                 data1=sentinel.data1,
                                 data2=sentinel.data2)
-        self.msg['data'].update({
+        self.msg.update({
             'data1': sentinel.data1,
             'data2': sentinel.data2
         })
@@ -67,7 +66,6 @@ class TestNotificationEvent(unittest.TestCase):
         command = NotifierEvent.unmarshal(self.msg)
 
         self.assertEqual(command.name, sentinel.name)
-        self.assertEqual(command.data, {})
         self.assertEqual(command.message_id, UUID)
         self.assertEqual(command.publisher_id, PUBLISHER_ID)
         self.assertEqual(command.priority, PRIORITY)
