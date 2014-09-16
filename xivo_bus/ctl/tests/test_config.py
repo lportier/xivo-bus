@@ -19,7 +19,7 @@ import unittest
 from xivo_bus.ctl.config import BusConfig, default_config
 
 
-class TestConfig(unittest.TestCase):
+class TestBusConfig(unittest.TestCase):
 
     def test_to_connection_params(self):
         config = BusConfig('foobar', 42)
