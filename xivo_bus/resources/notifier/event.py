@@ -24,12 +24,12 @@ import uuid
 
 class NotifierEvent(object):
 
-    def __init__(self, name, data):
+    def __init__(self, name, **kwargs):
         self.message_id = str(uuid.uuid4())
         self.publisher_id = socket.gethostname()
         self.priority = 'INFO',
         self.name = name
-        self.data = data
+        self.data = kwargs
         self.datetime = datetime.datetime.now()
 
     def marshal(self):
@@ -44,4 +44,4 @@ class NotifierEvent(object):
 
     @classmethod
     def unmarshal(cls, msg):
-        return cls(msg['name'], msg['data'])
+        return cls(msg['name'])

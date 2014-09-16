@@ -21,7 +21,7 @@ import datetime
 import socket
 import unittest
 from mock import sentinel, patch
-from xivo_bus.resources.notifier import NotifierEvent
+from .. event import NotifierEvent
 
 
 UUID = '9da9906e-07f1-44c9-83be-0f738a6ec729'
@@ -35,11 +35,11 @@ class TestNotificationEvent(unittest.TestCase):
     def setUp(self):
         self.msg = {
             'priority': PRIORITY,
-            'data': sentinel.data,
             'publisher_id': PUBLISHER_ID,
             'message_id': UUID,
             'name': sentinel.name,
-            'datetime': DATETIME
+            'datetime': DATETIME,
+            'data': {}
         }
 
     @patch('xivo_bus.resources.notifier.event.datetime')
@@ -47,7 +47,13 @@ class TestNotificationEvent(unittest.TestCase):
     def test_marshal(self, uuid_mock, datetime_mock):
         uuid_mock.uuid4.return_value = UUID
         datetime_mock.datetime.now.return_value = DATETIME
-        command = NotifierEvent(sentinel.name, sentinel.data)
+        command = NotifierEvent(sentinel.name,
+                                data1=sentinel.data1,
+                                data2=sentinel.data2)
+        self.msg['data'].update({
+            'data1': sentinel.data1,
+            'data2': sentinel.data2
+        })
 
         msg = command.marshal()
 
@@ -59,7 +65,7 @@ class TestNotificationEvent(unittest.TestCase):
         command = NotifierEvent.unmarshal(self.msg)
 
         self.assertEqual(command.name, sentinel.name)
-        self.assertEqual(command.data, sentinel.data)
+        self.assertEqual(command.data, {})
         self.assertEqual(command.message_id, UUID)
         self.assertEqual(command.publisher_id, PUBLISHER_ID)
         self.assertEqual(command.priority, PRIORITY)
