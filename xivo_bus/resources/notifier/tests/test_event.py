@@ -59,9 +59,11 @@ class TestNotificationEvent(unittest.TestCase):
 
         self.assertEqual(msg, self.msg)
 
+    @patch('xivo_bus.resources.notifier.event.datetime')
     @patch('xivo_bus.resources.notifier.event.uuid')
-    def test_unmarshal(self, uuid_mock):
+    def test_unmarshal(self, uuid_mock, datetime_mock):
         uuid_mock.uuid4.return_value = UUID
+        datetime_mock.datetime.now.return_value = DATETIME
         command = NotifierEvent.unmarshal(self.msg)
 
         self.assertEqual(command.name, sentinel.name)
@@ -69,3 +71,4 @@ class TestNotificationEvent(unittest.TestCase):
         self.assertEqual(command.message_id, UUID)
         self.assertEqual(command.publisher_id, PUBLISHER_ID)
         self.assertEqual(command.priority, PRIORITY)
+        self.assertEqual(command.datetime, DATETIME)
