@@ -27,7 +27,7 @@ from .. event import NotifierEvent
 UUID = '9da9906e-07f1-44c9-83be-0f738a6ec729'
 PUBLISHER_ID = socket.gethostname()
 PRIORITY = ('INFO',)
-DATETIME = datetime.datetime.now()
+DATETIME = str(datetime.datetime.now())
 
 
 class TestNotificationEvent(unittest.TestCase):

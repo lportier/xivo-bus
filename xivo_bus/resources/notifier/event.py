@@ -30,7 +30,7 @@ class NotifierEvent(object):
         self.priority = 'INFO',
         self.name = name
         self.data = kwargs
-        self.datetime = datetime.datetime.now()
+        self.datetime = str(datetime.datetime.now())
 
     def marshal(self):
         return {
